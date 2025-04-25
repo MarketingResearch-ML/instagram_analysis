@@ -249,46 +249,47 @@ def process_video(path, filename):
     audio_sentiment = extract_audio_sentiment(full_path)
     return audio_sentiment
 
-import pandas as pd
-import os
-import numpy as np
 
-# 결과 저장 리스트
-data = []
+def analyze_audio_from_video_directory(path: str, output_csv: str = "audio_sentiment_analysis_results.csv"):
+    import os
+    import pandas as pd
+    import numpy as np
 
-# 분석할 디렉토리 경로
-# path = '/Users/manyyeon/data/UNM/RA/instagram/video_data'
-path = '/Users/dayeon/data/UNM/RA/instagram_project/burberry'
-# 결과에 포함할 메타데이터 필드 (필요 없으면 제거 가능)
-METADATA_FIELDS = ['filename']  # 예시: filename만 사용
-FEATURE_COLUMNS = []  # 자동으로 채울 거라 비워둠
+    data = []
+    FEATURE_COLUMNS = []
 
-for filename in os.listdir(path):
-    name, ext = os.path.splitext(filename)
+    for filename in os.listdir(path):
+        name, ext = os.path.splitext(filename)
+        if ext.lower() != ".mp4":
+            continue
 
-    if ext.lower() not in [".mp4"]:
-        continue
+        print(f"▶️ Processing: {filename}")
+        result_dict = process_video(path, filename)
+        if result_dict is None:
+            print(f"⏩ Skipped {filename} because no audio was found.")
+            continue
 
-    print(f"▶️ Processing: {filename}")
-    result_dict = process_video(path, filename)
+        result_dict['filename'] = filename
 
-    if result_dict is None:
-        print(f"⏩ Skipped {filename} because no audio was found.")
-        continue
+        if not FEATURE_COLUMNS:
+            FEATURE_COLUMNS = list(result_dict.keys())
 
-    result_dict['filename'] = filename
+        row = [result_dict.get(col, np.nan) for col in FEATURE_COLUMNS]
+        data.append(row)
 
-    if not FEATURE_COLUMNS:
-        FEATURE_COLUMNS = list(result_dict.keys())
+        # Save CSV after each file
+        df = pd.DataFrame(data, columns=FEATURE_COLUMNS)
+        df.to_csv(output_csv, index=False)
 
-    row = [result_dict.get(col, np.nan) for col in FEATURE_COLUMNS]
-    data.append(row)
+    print(f"✅ Processing complete! CSV saved to: {os.path.abspath(output_csv)}")
+    return df
 
-# DataFrame 생성
-df = pd.DataFrame(data, columns=FEATURE_COLUMNS)
+def main():
+    print("Starting audio sentiment analysis...")
+    df_result = analyze_audio_from_video_directory(
+        path='/Users/dayeon/data/UNM/RA/instagram_project/burberry',
+        output_csv = 'results_burberry.csv'
+    )
 
-# CSV로 저장
-output_path = 'audio_sentiment_analysis_results.csv'
-df.to_csv(output_path, index=False)
-
-print(f"✅ Processing complete! CSV saved to: {os.path.abspath(output_path)}")
+if __name__ == "__main__":
+    main()
