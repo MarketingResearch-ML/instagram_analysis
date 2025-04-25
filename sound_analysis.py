@@ -5,8 +5,21 @@ import numpy as np
 import joblib
 import webrtcvad
 import wave
-# from moviepy.editor import VideoFileClip
-import moviepy
+# import moviepy.editor as mp
+import ffmpeg
+
+def extract_audio_from_video(video_path, audio_path):
+    # 먼저 오디오 스트림이 있는지 체크
+    probe = ffmpeg.probe(video_path)
+    audio_streams = [stream for stream in probe['streams'] if stream['codec_type'] == 'audio']
+
+    if not audio_streams:
+        raise ValueError(f"No audio stream found in {video_path}")
+
+    # 오디오 스트림 추출
+    stream = ffmpeg.input(video_path)
+    stream = ffmpeg.output(stream.audio, audio_path)
+    ffmpeg.run(stream, overwrite_output=True, quiet=True)
 
 def is_voice_present(audio_path, threshold=0.1):
     vad = webrtcvad.Vad(0)  # 0: 민감함, 3: 덜 민감
@@ -134,7 +147,7 @@ def analyze_music_mood_prob(audio_path):
     return mood, scores
 
 
-from speechbrain.pretrained import EncoderClassifier
+from speechbrain.inference import EncoderClassifier
 
 # 모델 로드
 emotion_model = EncoderClassifier.from_hparams(
@@ -180,8 +193,11 @@ def extract_audio_sentiment(video_path):
     original_audio_path = "temp_audio_original.wav"
     converted_audio_path = "temp_audio.wav"
 
-    clip = moviepy.editor.VideoFileClip(video_path)
-    clip.audio.write_audiofile(original_audio_path, verbose=False, logger=None)
+    try:
+        extract_audio_from_video(video_path, original_audio_path)
+    except ValueError as e:
+        print(f"⚠️ Skipping {video_path}: {e}")
+        return None  # 분석할 오디오가 없음
 
     convert_to_mono_wav(original_audio_path, converted_audio_path)
 
@@ -241,8 +257,8 @@ import numpy as np
 data = []
 
 # 분석할 디렉토리 경로
-path = '/Users/manyyeon/data/UNM/RA/instagram/video_data'
-
+# path = '/Users/manyyeon/data/UNM/RA/instagram/video_data'
+path = '/Users/dayeon/data/UNM/RA/instagram_project/burberry'
 # 결과에 포함할 메타데이터 필드 (필요 없으면 제거 가능)
 METADATA_FIELDS = ['filename']  # 예시: filename만 사용
 FEATURE_COLUMNS = []  # 자동으로 채울 거라 비워둠
@@ -256,14 +272,15 @@ for filename in os.listdir(path):
     print(f"▶️ Processing: {filename}")
     result_dict = process_video(path, filename)
 
-    # 결과 딕셔너리에 filename 추가
+    if result_dict is None:
+        print(f"⏩ Skipped {filename} because no audio was found.")
+        continue
+
     result_dict['filename'] = filename
 
-    # 첫 번째 파일에서 컬럼명 저장
     if not FEATURE_COLUMNS:
         FEATURE_COLUMNS = list(result_dict.keys())
 
-    # 결과를 순서대로 리스트로 변환해서 저장
     row = [result_dict.get(col, np.nan) for col in FEATURE_COLUMNS]
     data.append(row)
 
