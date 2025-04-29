@@ -24,3 +24,11 @@
     ```bash
     python sound_analysis.py
     ```
+
+## What this project does
+- Extracts audio from Instagram videos
+- Runs speech-to-text transcription using Whisper 
+- Analyzes sentiment of spoken words
+- Extracts background music mood
+- Detects on-screen captions using OCR (EasyOCR)
+- Saves all extracted features into a CSV file
