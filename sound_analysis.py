@@ -21,6 +21,9 @@ def extract_audio_from_video(video_path, audio_path):
     stream = ffmpeg.output(stream.audio, audio_path)
     ffmpeg.run(stream, overwrite_output=True, quiet=True)
 
+    if not os.path.exists(audio_path) or os.path.getsize(audio_path) == 0:
+        raise ValueError(f"❌ Audio file not created or empty: {audio_path}")
+
 def is_voice_present(audio_path, threshold=0.1):
     vad = webrtcvad.Vad(0)  # 0: 민감함, 3: 덜 민감
     with wave.open(audio_path, 'rb') as wf:
@@ -158,15 +161,24 @@ emotion_model = EncoderClassifier.from_hparams(
 from transformers import pipeline
 
 # Load only once
-asr_pipeline = pipeline("automatic-speech-recognition", model="openai/whisper-base")
+asr_pipeline = pipeline("automatic-speech-recognition", model="openai/whisper-base", return_timestamps=True)
 sentiment_pipeline = pipeline("sentiment-analysis")
 
 def analyze_voice_sentiment(audio_path):
     print("🗣️ Using Whisper + Sentiment pipeline...")
     try:
         transcription = asr_pipeline(audio_path)
-        text = transcription["text"]
+        print('transcription: ', transcription)
+        if "chunks" in transcription:
+            text = " ".join(chunk["text"] for chunk in transcription["chunks"])
+        else:
+            text = transcription["text"]
+
         print(f"📝 Transcribed Text: {text}")
+
+        if len(text.strip()) < 3:
+            print("⚠️ Text too short for sentiment analysis.")
+            return "neutral", 0.0
 
         sentiment_result = sentiment_pipeline(text)[0]
         print(f"🔍 Sentiment: {sentiment_result['label']}, Score: {sentiment_result['score']:.2f}")
@@ -286,9 +298,45 @@ def analyze_audio_from_video_directory(path: str, output_csv: str = "audio_senti
 
 def main():
     print("Starting audio sentiment analysis...")
-    df_result = analyze_audio_from_video_directory(
-        path='/Users/dayeon/data/UNM/RA/instagram_project/burberry',
-        output_csv = 'results_burberry.csv'
+    # df_result = analyze_audio_from_video_directory(
+    #     path='/Users/dayeon/data/UNM/RA/instagram_project/burberry',
+    #     output_csv = 'results_burberry.csv'
+    # )
+    # analyze_audio_from_video_directory(
+    #     path='/Users/dayeon/data/UNM/RA/instagram_project/cartier',
+    #     output_csv = 'results_cartier.csv'
+    # )
+    analyze_audio_from_video_directory(
+        path='/Users/dayeon/data/UNM/RA/instagram_project/test',
+        output_csv = 'results_test.csv'
+    )
+    analyze_audio_from_video_directory(
+        path='/Users/dayeon/data/UNM/RA/instagram_project/chanelofficial',
+        output_csv = 'results_chanelofficial.csv'
+    )
+    analyze_audio_from_video_directory(
+        path='/Users/dayeon/data/UNM/RA/instagram_project/dior',
+        output_csv = 'results_dior.csv'
+    )
+    analyze_audio_from_video_directory(
+        path='/Users/dayeon/data/UNM/RA/instagram_project/gucci',
+        output_csv = 'results_gucci.csv'
+    )
+    analyze_audio_from_video_directory(
+        path='/Users/dayeon/data/UNM/RA/instagram_project/hermes',
+        output_csv = 'results_hermes.csv'
+    )
+    analyze_audio_from_video_directory(
+        path='/Users/dayeon/data/UNM/RA/instagram_project/louisvuitton',
+        output_csv = 'results_louisvuitton.csv'
+    )
+    analyze_audio_from_video_directory(
+        path='/Users/dayeon/data/UNM/RA/instagram_project/prada',
+        output_csv = 'results_prada.csv'
+    )
+    analyze_audio_from_video_directory(
+        path='/Users/dayeon/data/UNM/RA/instagram_project/tiffanyandco',
+        output_csv = 'results_tiffanyandco.csv'
     )
 
 if __name__ == "__main__":
