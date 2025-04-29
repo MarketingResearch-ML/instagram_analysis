@@ -178,14 +178,14 @@ def analyze_voice_sentiment(audio_path):
 
         if len(text.strip()) < 3:
             print("⚠️ Text too short for sentiment analysis.")
-            return "neutral", 0.0
+            return "neutral", 0.0, text
 
         sentiment_result = sentiment_pipeline(text)[0]
         print(f"🔍 Sentiment: {sentiment_result['label']}, Score: {sentiment_result['score']:.2f}")
-        return sentiment_result['label'].lower(), sentiment_result['score']
+        return sentiment_result['label'].lower(), sentiment_result['score'], text
     except Exception as e:
         print(f"❌ Error during Whisper/Sentiment analysis: {e}")
-        return "error", 0.0
+        return "error", 0.0, ""
 
 
 def convert_to_mono_wav(input_path, output_path, target_sr=16000):
@@ -215,12 +215,13 @@ def extract_audio_sentiment(video_path):
 
     sentiment_voice = None
     score_voice = None
+    extracted_text_from_voice = None
     sentiment_music = None
     score_music = {}
 
     if is_voice_present(converted_audio_path):
         print("🎤 Detected human voice. Running both speech and music sentiment...")
-        sentiment_voice, score_voice = analyze_voice_sentiment(converted_audio_path)
+        sentiment_voice, score_voice, extracted_text_from_voice = analyze_voice_sentiment(converted_audio_path)
         sentiment_music, score_music = analyze_music_mood_prob(converted_audio_path)
         final_sentiment = sentiment_voice if sentiment_voice != "neutral" else sentiment_music
     else:
@@ -239,12 +240,13 @@ def extract_audio_sentiment(video_path):
         "sentiment_voice": sentiment_voice,
         "score_voice": score_voice,
         "voice_sentiment_score": voice_sentiment_score,
+        "extracted_text_from_voice": extracted_text_from_voice,
         "sentiment_music": sentiment_music,
         "score_music_happy_energetic": score_music.get("happy/energetic", 0),
         "score_music_calm_sad": score_music.get("calm/sad", 0),
         "score_music_neutral": score_music.get("neutral", 0),
         "music_sentiment_score": music_sentiment_continuous,
-        "final_sentiment": final_sentiment
+        "final_sentiment": final_sentiment,
     }
 
     # 결과에 librosa 특성 추가
