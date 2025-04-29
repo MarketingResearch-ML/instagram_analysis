@@ -254,13 +254,64 @@ def extract_audio_sentiment(video_path):
 
     return result
 
+import re
 
+def is_mostly_english(text, threshold=0.7):
+    # Only keep if over 70% of characters are English letters
+    english_chars = re.findall(r'[A-Za-z]', text)
+    return len(english_chars) / max(len(text), 1) >= threshold
 
+import easyocr
+import cv2
+
+ocr_reader = easyocr.Reader(['en'], gpu=False)
+
+def extract_captions_from_video(video_path, frame_interval_sec=1):
+    print(f"🔍 Running EasyOCR for {video_path}...")
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"❌ Failed to open {video_path}")
+        return ""
+
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_interval = int(fps * frame_interval_sec)
+    frame_count = 0
+    captions = []
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        if frame_count % frame_interval == 0:
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = ocr_reader.readtext(rgb_frame, detail=0)
+            if results:
+                # Filter only clean English text
+                clean_results = [text for text in results if is_mostly_english(text)]
+                captions.extend(clean_results)
+
+        frame_count += 1
+
+    cap.release()
+
+    combined_captions = " ".join(captions)
+    print(f"📝 Extracted clean captions: {combined_captions[:100]}..." if combined_captions else "⚠️ No clean captions found")
+    return combined_captions
 
 def process_video(path, filename):
     print(f"Processing video: {filename}")
     full_path = os.path.join(path, filename)
     audio_sentiment = extract_audio_sentiment(full_path)
+
+    if audio_sentiment is None:
+        return None
+
+    # Extract captions
+    captions = extract_captions_from_video(full_path)
+
+    # Add captions to the result
+    audio_sentiment["extracted_text_from_screen"] = captions
     return audio_sentiment
 
 
@@ -312,34 +363,34 @@ def main():
         path='/Users/dayeon/data/UNM/RA/instagram_project/test',
         output_csv = 'results_test.csv'
     )
-    analyze_audio_from_video_directory(
-        path='/Users/dayeon/data/UNM/RA/instagram_project/chanelofficial',
-        output_csv = 'results_chanelofficial.csv'
-    )
-    analyze_audio_from_video_directory(
-        path='/Users/dayeon/data/UNM/RA/instagram_project/dior',
-        output_csv = 'results_dior.csv'
-    )
-    analyze_audio_from_video_directory(
-        path='/Users/dayeon/data/UNM/RA/instagram_project/gucci',
-        output_csv = 'results_gucci.csv'
-    )
-    analyze_audio_from_video_directory(
-        path='/Users/dayeon/data/UNM/RA/instagram_project/hermes',
-        output_csv = 'results_hermes.csv'
-    )
-    analyze_audio_from_video_directory(
-        path='/Users/dayeon/data/UNM/RA/instagram_project/louisvuitton',
-        output_csv = 'results_louisvuitton.csv'
-    )
-    analyze_audio_from_video_directory(
-        path='/Users/dayeon/data/UNM/RA/instagram_project/prada',
-        output_csv = 'results_prada.csv'
-    )
-    analyze_audio_from_video_directory(
-        path='/Users/dayeon/data/UNM/RA/instagram_project/tiffanyandco',
-        output_csv = 'results_tiffanyandco.csv'
-    )
+    # analyze_audio_from_video_directory(
+    #     path='/Users/dayeon/data/UNM/RA/instagram_project/chanelofficial',
+    #     output_csv = 'results_chanelofficial.csv'
+    # )
+    # analyze_audio_from_video_directory(
+    #     path='/Users/dayeon/data/UNM/RA/instagram_project/dior',
+    #     output_csv = 'results_dior.csv'
+    # )
+    # analyze_audio_from_video_directory(
+    #     path='/Users/dayeon/data/UNM/RA/instagram_project/gucci',
+    #     output_csv = 'results_gucci.csv'
+    # )
+    # analyze_audio_from_video_directory(
+    #     path='/Users/dayeon/data/UNM/RA/instagram_project/hermes',
+    #     output_csv = 'results_hermes.csv'
+    # )
+    # analyze_audio_from_video_directory(
+    #     path='/Users/dayeon/data/UNM/RA/instagram_project/louisvuitton',
+    #     output_csv = 'results_louisvuitton.csv'
+    # )
+    # analyze_audio_from_video_directory(
+    #     path='/Users/dayeon/data/UNM/RA/instagram_project/prada',
+    #     output_csv = 'results_prada.csv'
+    # )
+    # analyze_audio_from_video_directory(
+    #     path='/Users/dayeon/data/UNM/RA/instagram_project/tiffanyandco',
+    #     output_csv = 'results_tiffanyandco.csv'
+    # )
 
 if __name__ == "__main__":
     main()
