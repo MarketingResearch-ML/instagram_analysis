@@ -708,7 +708,9 @@ def process_directory(path, model_dir, mode='sampled', save_csv=True):
         else:
             continue
 
-        json_filename = filename.replace(ext, ".json")
+        import re
+        base_name = re.match(r"(\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_UTC)", filename)
+        json_filename = base_name.group(1) + ".json"
         metadata = extract_json_metadata(path, json_filename)
 
         # Ensure metadata aligns with expected columns
@@ -730,7 +732,7 @@ def process_directory(path, model_dir, mode='sampled', save_csv=True):
 
     if save_csv:
         os.makedirs("results", exist_ok=True)
-        csv_name = os.path.join("results", f"{os.path.basename(path)}_analysis_{mode}_3.csv")
+        csv_name = os.path.join("results", f"{os.path.basename(path)}_analysis_{mode}.csv")
         df.to_csv(csv_name, index=False)
         print(f"🎉 Saved to: {csv_name}")
 
