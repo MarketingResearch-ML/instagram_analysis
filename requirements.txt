@@ -32,6 +32,20 @@ audioread~=3.0.1
 pooch~=1.8.2
 soxr~=0.5.0.post1
 
+# YOLOv8 and DeepFace
+ultralytics~=8.1.33
+deepface~=0.0.87
+
+# For sentiment and transcription
+SpeechRecognition~=3.10.0
+textblob~=0.18.0
+
+# For image processing and features
+scikit-image~=0.22.0
+scikit-learn~=1.4.2
+Pillow~=10.3.0
+
+
 # Others (basic Python packages)
 python-dateutil~=2.8.2
 six~=1.16.0
