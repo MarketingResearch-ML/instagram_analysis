@@ -24,8 +24,9 @@ yolo_model = YOLO("yolov8l.pt")
 METADATA_FIELDS = [
     "filename", "__typename", "comments_disabled", "height", "width", "display_url",
     "likes", "caption", "comments", "id", "shortcode",
-    "timestamp", "thumbnail_src"
+    "timestamp", "thumbnail_src", "paid_partnership", "coauthor_accounts"
 ]
+
 
 # Define image/video analysis columns
 FEATURE_COLUMNS = [
@@ -58,6 +59,8 @@ def extract_json_metadata(path, filename):
 
     node = myjson.get("node", {})
 
+    iphone_struct = node.get("iphone_struct", {})
+
     return {
         "filename": filename,
         "__typename": node.get("__typename", np.nan),
@@ -71,8 +74,11 @@ def extract_json_metadata(path, filename):
         "id": node.get("id", np.nan),
         "shortcode": node.get("shortcode", np.nan),
         "timestamp": node.get("taken_at_timestamp", np.nan),
-        "thumbnail_src": node.get("thumbnail_src", np.nan)
+        "thumbnail_src": node.get("thumbnail_src", np.nan),
+        "paid_partnership": iphone_struct.get("is_paid_partnership", False),
+        "coauthor_accounts": iphone_struct.get("coauthor_producers", np.nan)
     }
+
 
 
 # Function to detect objects in an image
