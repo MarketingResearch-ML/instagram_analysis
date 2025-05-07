@@ -11,9 +11,10 @@ import speech_recognition as sr
 import lzma  # Import LZMA module for .xz files
 import random
 import ffmpeg
+from tqdm import tqdm
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 # Load YOLO model
@@ -583,7 +584,7 @@ def process_video(path, filename, mode='sampled'):
     r_vals, g_vals, b_vals = [], [], []
 
     # 4. 프레임 분석
-    for group in sampled_frame_groups:
+    for group in tqdm(sampled_frame_groups, desc="Analyzing frame groups"):
         for frame in group:
             results = yolo_model(frame)
             person_count, detected_objects_per_frame = detect_objects(results)
@@ -747,9 +748,9 @@ def process_directory(path, model_dir, mode='sampled', save_csv=True):
 if __name__ == "__main__":
     model_dir = "./models"  # wherever your .pkl files are stored
     folders = [
-        "/Users/dayeon/data/UNM/RA/instagram_project/test2",
+        "/Users/dayeon/data/UNM/RA/instagram_project/osaka",
         # "/Users/dayeon/data/UNM/RA/instagram_project/burberry"
     ]
 
     for folder in folders:
-        process_directory(folder, model_dir=model_dir, mode='sampled')
+        process_directory(folder, model_dir=model_dir, mode='sequential')
