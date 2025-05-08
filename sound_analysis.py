@@ -1,5 +1,6 @@
 import os
 import librosa
+import torch
 import soundfile as sf
 import numpy as np
 import joblib
@@ -153,16 +154,27 @@ def analyze_music_mood_prob(audio_path):
 from speechbrain.inference import EncoderClassifier
 
 # 모델 로드
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
 emotion_model = EncoderClassifier.from_hparams(
     source="speechbrain/emotion-recognition-wav2vec2-IEMOCAP",
     savedir="pretrained_models/emotion-recognition"
-)
+).to(device)
+
 
 from transformers import pipeline
 
 # Load only once
-asr_pipeline = pipeline("automatic-speech-recognition", model="openai/whisper-base", return_timestamps=True)
-sentiment_pipeline = pipeline("sentiment-analysis")
+device_num = 0 if torch.cuda.is_available() else -1
+
+asr_pipeline = pipeline(
+    "automatic-speech-recognition",
+    model="openai/whisper-base",
+    return_timestamps=True,
+    device=device_num
+)
+
+sentiment_pipeline = pipeline("sentiment-analysis", device=device_num)
 
 def analyze_voice_sentiment(audio_path):
     print("🗣️ Using Whisper + Sentiment pipeline...")
@@ -264,7 +276,7 @@ def is_mostly_english(text, threshold=0.7):
 import easyocr
 import cv2
 
-ocr_reader = easyocr.Reader(['en'], gpu=False)
+ocr_reader = easyocr.Reader(['en'], gpu=True)
 
 def extract_captions_from_video(video_path, frame_interval_sec=1):
     print(f"🔍 Running EasyOCR for {video_path}...")
@@ -350,6 +362,9 @@ def analyze_audio_from_video_directory(path: str, output_csv: str = "audio_senti
     return df
 
 def main():
+    if not torch.cuda.is_available():
+        print("⚠️ GPU not available. Running on CPU. This might be slow.")
+
     print("Starting audio sentiment analysis...")
     # df_result = analyze_audio_from_video_directory(
     #     path='/Users/dayeon/data/UNM/RA/instagram_project/burberry',
