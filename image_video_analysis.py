@@ -729,7 +729,16 @@ def process_directory(path, model_dir, mode='sampled', save_csv=True):
             print(f"Expected columns: {len(columns)}, Got: {len(row)}")
             print(f"Row Data: {row}")
 
-        data.append(row)
+        # Create single-row DataFrame
+        df_row = pd.DataFrame([row], columns=columns)
+
+        # Save incrementally
+        csv_name = os.path.join("results", f"{os.path.basename(path)}_analysis_{mode}.csv")
+        os.makedirs("results", exist_ok=True)
+        df_row.to_csv(csv_name, mode='a', index=False, header=not os.path.exists(csv_name))
+
+        print(f"✅ Saved row for: {filename}")
+
 
         print(f"✅ Processed: {filename}")
         print(f"Metadata: {metadata}")
